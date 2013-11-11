@@ -1,0 +1,10 @@
+syntax:glob
+*~
+*.pyc
+*\.\#*
+*\#
+*.orig
+*.rej
+TAGS
+.tox
+docs/_build
