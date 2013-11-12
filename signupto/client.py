@@ -58,11 +58,18 @@ API_RESOURCES = [
 SignuptoResponse = namedtuple('SignuptoReponse', 'data next count')
 
 
-class ServerSideError(ValueError):
-    pass
+
+class ClientError(ValueError):
+    """
+    Indicates error made by programmer using this library.
+    Used when the server returns a JSON document indicating the error.
+    """
+    def __init__(self, message, error_info):
+        super(ValueError, self).__init__(message)
+        self.error_info = error_info
 
 
-class ApiError(ValueError):
+class ObjectNotFound(ClientError):
     pass
 
 
@@ -76,12 +83,15 @@ class SignuptoSerializationHandler(drest.serialization.JsonSerializationHandler)
             # For HEAD responses
             return serialized_data
         d = super(SignuptoSerializationHandler, self).deserialize(serialized_data)
-        if "status" not in d:
-            raise ServerSideError("Server response (%s) did not contain 'status' key" % serialized_data)
+        assert "status" in d, "Server response (%s) did not contain 'status' key, aborting" % serialized_data
         if d["status"].lower() != "ok":
             if d['status'].lower() == "error" and 'response' in d:
-                raise ApiError("Server returned error: %r" % d['response'])
-            raise ApiError("Unexpected status '%s'" % d['status'])
+                if d['response'].get('code', None) == 404:
+                    cls = ObjectNotFound
+                else:
+                    cls = ClientError
+                raise cls("%r" % d['response'], d['response'])
+            raise AssertionError("Unexpected status '%s', aborting" % d['status'])
         r = d['response']
         return SignuptoResponse(r['data'], r['next'], r['count'])
 
