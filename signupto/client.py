@@ -16,6 +16,7 @@ except ImportError:
 from six.moves.urllib import parse as urllib_parse
 
 import drest
+import drest.exc
 import drest.request
 import drest.serialization
 import drest.resource
@@ -71,6 +72,9 @@ class SignuptoSerializationHandler(drest.serialization.JsonSerializationHandler)
     data dictionary for convenience.
     """
     def deserialize(self, serialized_data):
+        if serialized_data == "":
+            # For HEAD responses
+            return serialized_data
         d = super(SignuptoSerializationHandler, self).deserialize(serialized_data)
         if "status" not in d:
             raise ServerSideError("Server response (%s) did not contain 'status' key" % serialized_data)
@@ -85,19 +89,24 @@ class SignuptoSerializationHandler(drest.serialization.JsonSerializationHandler)
 class SignuptoResourceHandler(drest.resource.RESTResourceHandler):
 
     # Need to add 'head' which is not in RESTResourceHandler. Copy-paste job.
-    def head(self, resource_id=None, params={}):
+    def head(self, resource_id=None, params=None):
+        if params is None:
+            params = {}
         if resource_id:
             path = '/%s/%s' % (self.path, resource_id)
         else:
             path = '/%s' % self.path
 
+        # We need to force params into query string, which drest doesn't support
+        params = self.filter(params)
+        url = urllib_parse.urlunparse(('', '', path, '', '&'.join('%s=%s' % (k, v) for k, v in params.items()), ''))
         try:
-            response = self.api.make_request('HEAD', path,
-                                             params=self.filter(params))
-        except exc.dRestRequestError as e:
+            response = self.api.make_request('HEAD', url,
+                                             None)
+        except drest.exc.dRestRequestError as e:
             msg = "%s (resource: %s, id: %s)" % (e.msg, self.name,
                                                  resource_id)
-            raise exc.dRestRequestError(msg, e.response)
+            raise drest.exc.dRestRequestError(msg, e.response)
 
         return response
 
@@ -215,7 +224,6 @@ class TokenAuthorization(object):
         if headers is None:
             headers = {}
         headers['Authorization'] = "SuTToken %s" % self.token
-
         return handler.make_request(method, url, params=params, headers=headers)
 
 
