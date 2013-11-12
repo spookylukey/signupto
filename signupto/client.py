@@ -7,15 +7,18 @@ from datetime import datetime
 from time import mktime
 from wsgiref.handlers import format_date_time
 import random
-import sha
 import string
-import urlparse
+
+try:
+    from sha import new as sha1
+except ImportError:
+    from hashlib import sha1
+from six.moves.urllib import parse as urllib_parse
 
 import drest
 import drest.request
 import drest.serialization
 import drest.resource
-
 
 API_RESOURCES = [
     'token',
@@ -151,14 +154,14 @@ def make_hash_authorization_signature(method, url, date_string, company_id, user
          "%(api_key)s"
 
          % dict(method=method,
-                path=urlparse.urlparse(url).path.rstrip('/'),
+                path=urllib_parse.urlparse(url).path.rstrip('/'),
                 date_string=date_string,
                 company_id=company_id,
                 user_id=user_id,
                 nonce=nonce,
                 api_key=api_key)
          )
-    return sha.new(s).hexdigest()
+    return sha1(s.encode('utf-8')).hexdigest()
 
 
 class HashAuthorization(object):
