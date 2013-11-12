@@ -220,9 +220,6 @@ class HashAuthorization(object):
         self.user_id = user_id
         self.api_key = api_key
 
-    def initialized(self, version=None):
-        self.version = version # Need for canonical string
-
     def make_nonce(self):
         return ''.join(random.choice(string.ascii_lowercase + string.digits) for x in range(40))
 
