@@ -142,6 +142,23 @@ class SignuptoResourceHandler(drest.resource.RESTResourceHandler):
 
         return response
 
+    # Again, we want a consistent API so don't require resource_id
+    def put(self, params=None):
+        if params is None:
+            params = {}
+
+        params = self.filter(params)
+        path = '/%s' % self.path
+
+        try:
+            response = self.api.make_request('PUT', path, params)
+        except drest.exc.dRestRequestError as e:
+            msg = "%s (resource: %s, id: %s)" % (e.msg, self.name,
+                                                 resource_id)
+            raise drest.exc.dRestRequestError(msg, e.response)
+
+        return response
+
 
 class SignuptoRequestHandler(drest.request.RequestHandler):
     class Meta:
