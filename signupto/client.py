@@ -340,6 +340,25 @@ class Endpoint(object):
     def get(self, **kwargs):
         return getattr(self.drest_api, self.resource_name).get(params=kwargs).data
 
+    def get_all(self, **kwargs):
+        """
+        For requests that return lists in the 'data' attribute, and apply
+        paging, this method will repeatedly follow the 'next' attribute to build
+        up a full list, which is returned.
+        """
+        retval = []
+        start = None
+        kwargs = kwargs.copy()
+        while True:
+            if start is not None:
+                kwargs['start'] = start
+            response = self.get(**kwargs)
+            retval.extend(response.data)
+            if response.next is None:
+                return retval
+            else:
+                start = response.next
+
     def post(self, **kwargs):
         return getattr(self.drest_api, self.resource_name).post(params=kwargs).data
 
