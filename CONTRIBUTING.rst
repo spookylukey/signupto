@@ -2,8 +2,8 @@
 Contributing
 ============
 
-Contributions are welcome, and they are greatly appreciated! Every
-little bit helps, and credit will always be given.
+Contributions are welcome, and they are greatly appreciated! Every little bit
+helps, and credit will always be given.
 
 You can contribute in many ways:
 
@@ -25,17 +25,26 @@ Fix bugs and implement features
 
 Look through the BitBucket issues for bugs or features that you want to tackle.
 
-Write Documentation
+Write tests
+~~~~~~~~~~~
+
+There are no tests yet, and they are a bit tricky to do, as this is a thin
+wrapper around drest, and you really have to test a client library like this
+against the actual web service, which has no sandbox. Testing strategies will
+probably depend on how well httplib2 can be mocked out.
+
+
+Write documentation
 ~~~~~~~~~~~~~~~~~~~
 
 signupto could always use more documentation, whether as part of the
 official signupto docs, in docstrings, or even on the web in blog posts,
 articles, and such.
 
-Submit Feedback
+Submit feedback
 ~~~~~~~~~~~~~~~
 
-The best way to send feedback is to file an issue at https://bitbucket.org/spookylukey/signupto/issues.
+The best way to send feedback is to file an issue at https://bitbucket.org/spookylukey/signupto/issues
 
 If you are proposing a feature:
 
@@ -46,7 +55,7 @@ If you are proposing a feature:
 
 
 
-Get Started!
+Get started!
 ------------
 
 Ready to contribute? Here's how to set up `signupto` for local development.
