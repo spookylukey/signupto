@@ -129,9 +129,9 @@ The dictionary is stored on the exception object in the attribute ``error_info``
 
 When the error has code 404, indicating something not found, a subclass of
 ``ClientError``, ``ObjectNotFound``, is used instead. This can be especially
-useful when you are applying filters with the result is that there are no
-matching objects, which is often not an error condition for your application, so
-needs to be handled differently::
+useful when you are applying filters such that there are no matching objects,
+which is often not an error condition for your application, so needs to be
+handled differently::
 
 
     from signupto import ObjectNotFound
