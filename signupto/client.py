@@ -120,6 +120,28 @@ class SignuptoResourceHandler(drest.resource.RESTResourceHandler):
 
         return response
 
+    # Make the interface standard by not requiring resource_id, and allowing for
+    # other types of query - e.g. see
+    # https://dev.sign-up.to/documentation/reference/latest/endpoints/subscription/
+    # which allows deleting by different parameters
+    def delete(self, params=None):
+        if params is None:
+            params = {}
+        if 'id' in params:
+            resource_id = params.pop('id')
+            path = "/%s/%s" % (self.path, resource_id)
+        else:
+            path = '/%s' % self.path
+
+        try:
+            response = self.api.make_request('DELETE', path, params)
+        except drest.exc.dRestRequestError as e:
+            msg = "%s (resource: %s, id: %s)" % (e.msg, self.name,
+                                                 resource_id)
+            raise drest.exc.dRestRequestError(msg, e.response)
+
+        return response
+
 
 class SignuptoRequestHandler(drest.request.RequestHandler):
     class Meta:
