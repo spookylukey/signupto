@@ -28,10 +28,10 @@ Look through the BitBucket issues for bugs or features that you want to tackle.
 Write tests
 ~~~~~~~~~~~
 
-There are no tests yet, and they are a bit tricky to do, as this is a thin
-wrapper around drest, and you really have to test a client library like this
-against the actual web service, which has no sandbox. Testing strategies will
-probably depend on how well httplib2 can be mocked out.
+There are no tests yet, and they are a bit tricky to do, as you really have to
+test a client library like this against the actual web service, which has no
+sandbox. Testing strategies will probably depend on how well ``requests`` can be
+mocked out.
 
 
 Write documentation

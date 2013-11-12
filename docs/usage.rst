@@ -107,6 +107,10 @@ Example::
                            u'id': 19486109}, next=None, count=1)
 
 
+As there is no response dictionary for ``HEAD`` verbs, the ``head()`` method
+does not return a ``SignuptoResponse``, but instead returns None. It will raise
+an error like the other calls for HTTP codes in 4XX range.
+
 Errors
 ======
 

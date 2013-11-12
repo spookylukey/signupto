@@ -20,8 +20,4 @@ but the API is not yet finalized, especially in the area of error handling.
 If you use this library, let me know (at L.Plant.98@cantab.net), and I can
 consult you about improvements. Otherwise I may change things without notice.
 
-There is very little code, as this is essentially a thin wrapper around `drest
-<https://github.com/derks/drest>`_, with some custom code for sign-up.to
-authentication methods.
-
 There are also no automated tests yet. (Patches welcome!)

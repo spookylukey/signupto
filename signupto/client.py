@@ -6,6 +6,7 @@ from collections import namedtuple
 from datetime import datetime
 from time import mktime
 from wsgiref.handlers import format_date_time
+import json
 import random
 import string
 
@@ -15,15 +16,10 @@ except ImportError:
     from hashlib import sha1
 from six.moves.urllib import parse as urllib_parse
 
-import drest
-import drest.exc
-import drest.request
-import drest.serialization
-import drest.resource
+import requests
 
 # By explicitly listing endpoints, we can get tab completion and help etc. when
-# using Client interactively or in an IDE. It's also needed for drest, which we
-# make use of to do the heavy lifting.
+# using Client interactively or in an IDE.
 API_RESOURCES = [
     'token',
 
@@ -61,139 +57,33 @@ API_RESOURCES = [
 SignuptoResponse = namedtuple('SignuptoReponse', 'data next count')
 
 
+class ServerHttpError(ValueError):
+    """
+    Indicates HTTP error code.
+    """
+    def __init__(self, message, status_code):
+        super(HttpError, self).__init__(message)
+        self.status_code = status_code
+
 
 class ClientError(ValueError):
     """
     Indicates error made by programmer using this library.
     Used when the server returns a JSON document indicating the error.
     """
-    def __init__(self, message, error_info):
-        super(ValueError, self).__init__(message)
+    def __init__(self, message, error_info, status_code):
+        super(ClientError, self).__init__(message)
         self.error_info = error_info
+        self.status_code = status_code
 
 
 class ObjectNotFound(ClientError):
     pass
 
 
-class SignuptoSerializationHandler(drest.serialization.JsonSerializationHandler):
-    """
-    JSON serialization handler, that also unwraps a layer of the returned
-    data dictionary for convenience.
-    """
-    def deserialize(self, serialized_data):
-        if len(serialized_data) == 0:
-            # For HEAD responses
-            return serialized_data
-        d = super(SignuptoSerializationHandler, self).deserialize(serialized_data)
-        assert "status" in d, "Server response (%s) did not contain 'status' key, aborting" % serialized_data
-        if d["status"].lower() != "ok":
-            if d['status'].lower() == "error" and 'response' in d:
-                if d['response'].get('code', None) == 404:
-                    cls = ObjectNotFound
-                else:
-                    cls = ClientError
-                raise cls("%r" % d['response'], d['response'])
-            raise AssertionError("Unexpected status '%s', aborting" % d['status'])
-        r = d['response']
-        return SignuptoResponse(r['data'], r['next'], r['count'])
-
-
-class SignuptoResourceHandler(drest.resource.RESTResourceHandler):
-
-    # Need to add 'head' which is not in RESTResourceHandler. Copy-paste job.
-    def head(self, resource_id=None, params=None):
-        if params is None:
-            params = {}
-        if resource_id:
-            path = '/%s/%s' % (self.path, resource_id)
-        else:
-            path = '/%s' % self.path
-
-        # We need to force params into query string, which drest doesn't support
-        params = self.filter(params)
-        url = urllib_parse.urlunparse(('', '', path, '', '&'.join('%s=%s' % (k, v) for k, v in params.items()), ''))
-        try:
-            response = self.api.make_request('HEAD', url,
-                                             None)
-        except drest.exc.dRestRequestError as e:
-            msg = "%s (resource: %s, id: %s)" % (e.msg, self.name,
-                                                 resource_id)
-            raise drest.exc.dRestRequestError(msg, e.response)
-
-        return response
-
-    # Make the interface standard by not requiring resource_id, and allowing for
-    # other types of query - e.g. see
-    # https://dev.sign-up.to/documentation/reference/latest/endpoints/subscription/
-    # which allows deleting by different parameters
-    def delete(self, params=None):
-        if params is None:
-            params = {}
-        if 'id' in params:
-            resource_id = params.pop('id')
-            path = "/%s/%s" % (self.path, resource_id)
-        else:
-            path = '/%s' % self.path
-
-        try:
-            response = self.api.make_request('DELETE', path, params)
-        except drest.exc.dRestRequestError as e:
-            msg = "%s (resource: %s)" % (e.msg, self.name)
-            raise drest.exc.dRestRequestError(msg, e.response)
-
-        return response
-
-    # Again, we want a consistent API so don't require resource_id
-    def put(self, params=None):
-        if params is None:
-            params = {}
-
-        params = self.filter(params)
-        path = '/%s' % self.path
-
-        try:
-            response = self.api.make_request('PUT', path, params)
-        except drest.exc.dRestRequestError as e:
-            msg = "%s (resource: %s)" % (e.msg, self.name)
-            raise drest.exc.dRestRequestError(msg, e.response)
-
-        return response
-
-
-class SignuptoRequestHandler(drest.request.RequestHandler):
-    class Meta:
-        serialize = True
-        deserialize = True
-        serialization_handler  = SignuptoSerializationHandler
-
-    """
-    Request handler that can do include sign-up.to authentication methods
-    (by delegating to other classes).
-    """
-    def __init__(self, **kwargs):
-        signupto_auth = kwargs.pop('signupto_auth', None)
-        if signupto_auth is None:
-            signupto_auth = NoAuthorization()
-        self.signupto_auth = signupto_auth
-        super(SignuptoRequestHandler, self).__init__(**kwargs)
-
-    def make_request(self, method, url, params=None, headers=None):
-        base_handler = super(SignuptoRequestHandler, self)
-        return self.signupto_auth.make_authorized_request(base_handler, method, url, params=params, headers=headers)
-
-
-class SignuptoAPI(drest.API):
-    class Meta:
-        trailing_slash = False
-        extra_headers = {'Accept': 'application/json'}
-        request_handler = SignuptoRequestHandler
-        resource_handler = SignuptoResourceHandler
-
-
 class NoAuthorization(object):
-    def make_authorized_request(self, handler, method, url, params=None, headers=None):
-        return handler.make_request(method, url, params=params, headers=headers)
+    def make_authorized_request(self, handler, method, url, data=None, params=None, headers=None):
+        return handler(method, url, data=data, params=params, headers=headers)
 
 
 def make_hash_authorization_signature(method, url, date_string, company_id, user_id, nonce, api_key):
@@ -224,7 +114,7 @@ class HashAuthorization(object):
     def make_nonce(self):
         return ''.join(random.choice(string.ascii_lowercase + string.digits) for x in range(40))
 
-    def make_authorized_request(self, handler, method, url, params=None, headers=None):
+    def make_authorized_request(self, handler, method, url, data=None, params=None, headers=None):
         if headers is None:
             headers = {}
         nonce = self.make_nonce()
@@ -236,7 +126,7 @@ class HashAuthorization(object):
 
         signature = make_hash_authorization_signature(method, url, date_string, self.company_id, self.user_id, nonce, self.api_key)
         headers['Authorization'] = 'SuTHash signature="%s"' % signature
-        return handler.make_request(method, url, params=params, headers=headers)
+        return handler(method, url, data=data, params=params, headers=headers)
 
 
 class TokenAuthorization(object):
@@ -255,11 +145,11 @@ class TokenAuthorization(object):
         self.expiry = r.data['expiry']
         self.initialized = True
 
-    def make_authorized_request(self, handler, method, url, params=None, headers=None):
+    def make_authorized_request(self, handler, method, url, data=None, params=None, headers=None):
         if headers is None:
             headers = {}
         headers['Authorization'] = "SuTToken %s" % self.token
-        return handler.make_request(method, url, params=params, headers=headers)
+        return handler(method, url, params=params, headers=headers)
 
 
 class Client(object):
@@ -293,38 +183,100 @@ class Client(object):
     raised.
 
     """
+    extra_headers = {'Accept': 'application/json',
+                     'Content-Type': 'application/json',
+                     }
+
 
     def __init__(self, version="0", auth=None):
         if hasattr(auth, 'initialize') and not getattr(auth, 'initialized', False):
             auth.initialize(version=version)
+        self.baseurl = 'https://api.sign-up.to/v%s/' % version
+        if auth is None:
+            auth = NoAuthorization()
+        self.auth = auth
 
-        api = SignuptoAPI(
-            baseurl='https://api.sign-up.to/v%s/' % version,
-            signupto_auth=auth, # will be passed to RequestHandler __init__
-            )
+    def make_request_raw(self, method, url, data='', params=None, headers=None):
+        return requests.request(method, url, data=data, params=params, headers=headers)
 
-        for resource_name in API_RESOURCES:
-            api.add_resource(resource_name)
+    def make_request(self, method, resource_name, data=None, params=None, headers=None):
+        url = self.baseurl + resource_name
+        if headers is None:
+            headers = {}
+        h2 = {}
+        h2.update(self.extra_headers)
+        h2.update(headers)
+        response = self.auth.make_authorized_request(self.make_request_raw,
+                                                     method,
+                                                     url,
+                                                     data=json.dumps(data),
+                                                     params=params,
+                                                     headers=h2)
+        return self.handle_response(response)
 
-        self.api = api
+    def handle_response(self, response):
+        code = response.status_code
+        if 500 <= code:
+            raise ServerHttpError(response.content, code)
+        else:
+            assert code < 300 or code >= 400 # Redirections should have been handled
+            return self.deserialize(response)
+
+    def deserialize(self, response):
+        error_cls = None
+        if 400 <= response.status_code < 500:
+            if response.status_code == 404:
+                error_cls = ObjectNotFound
+            else:
+                error_cls = ClientError
+
+        if response.request.method == 'HEAD':
+            # There is no body, can only return None or raise exception
+            if error_cls is not None:
+                return error_cls("URL: %s" % response.request.url,
+                                 {}, response.status_code)
+            else:
+                return None
+
+        d = json.loads(response.content)
+        assert "status" in d, "Server response (%s) did not contain 'status' key, aborting" % serialized_data
+
+        status = d["status"].lower()
+        if status != "ok":
+            assert status == 'error'
+            assert 'response' in d
+            response_dict = d['response']
+            raise error_cls("URL: %s %r" % (response.request.url, response_dict),
+                            response_dict, response.status_code)
+        r = d['response']
+        return SignuptoResponse(r['data'], r['next'], r['count'])
 
 
 class Endpoint(object):
-    # This provides an API similar to ResourceHandler, but simplified to allow
-    # the data dictionary to be passed keyword arguments, and returns the
-    # SignuptoResponse rather than the ResponseHandler object.
 
-    # This simplifies:
-    #   client.api.foo.get(dict(option='bar')).data.data
-    # to:
-    #   client.foo.get(option='bar').data
-
-    def __init__(self, drest_api, resource_name):
-        self.drest_api = drest_api
+    def __init__(self, client, resource_name):
+        self.client = client
         self.resource_name = resource_name
 
     def get(self, **kwargs):
-        return getattr(self.drest_api, self.resource_name).get(params=kwargs).data
+        return self.client.make_request('GET', self.resource_name,
+                                        params=kwargs)
+
+    def post(self, **kwargs):
+        return self.client.make_request('POST', self.resource_name,
+                                        data=kwargs)
+
+    def put(self, **kwargs):
+        return self.client.make_request('PUT', self.resource_name,
+                                        data=kwargs)
+
+    def delete(self, **kwargs):
+        return self.client.make_request('DELETE', self.resource_name,
+                                        params=kwargs)
+
+    def head(self, **kwargs):
+        return self.client.make_request('HEAD', self.resource_name,
+                                        params=kwargs)
 
     def get_all(self, **kwargs):
         """
@@ -345,18 +297,6 @@ class Endpoint(object):
             else:
                 start = response.next
 
-    def post(self, **kwargs):
-        return getattr(self.drest_api, self.resource_name).post(params=kwargs).data
-
-    def put(self, **kwargs):
-        return getattr(self.drest_api, self.resource_name).put(params=kwargs).data
-
-    def delete(self, **kwargs):
-        return getattr(self.drest_api, self.resource_name).delete(params=kwargs).data
-
-    def head(self, **kwargs):
-        return getattr(self.drest_api, self.resource_name).head(params=kwargs).data
-
 
 
 for resource_name in API_RESOURCES:
@@ -364,7 +304,7 @@ for resource_name in API_RESOURCES:
     # 'ResponseHandler' object and simplifies the API
 
     def a_property(self, resource_name=resource_name):
-        return Endpoint(self.api, resource_name)
+        return Endpoint(self, resource_name)
     a_property.__name__ = resource_name
 
     setattr(Client, resource_name, property(a_property))
