@@ -31,6 +31,8 @@ setup(
     package_dir={'signupto': 'signupto'},
     include_package_data=True,
     install_requires=[
+        "drest >= 0.9.10",
+        "six >= 1.4",
     ],
     license="BSD",
     zip_safe=False,
