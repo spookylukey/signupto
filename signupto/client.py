@@ -21,6 +21,9 @@ import drest.request
 import drest.serialization
 import drest.resource
 
+# By explicitly listing endpoints, we can get tab completion and help etc. when
+# using Client interactively or in an IDE. It's also needed for drest, which we
+# make use of to do the heavy lifting.
 API_RESOURCES = [
     'token',
 
