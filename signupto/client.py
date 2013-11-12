@@ -139,8 +139,7 @@ class SignuptoResourceHandler(drest.resource.RESTResourceHandler):
         try:
             response = self.api.make_request('DELETE', path, params)
         except drest.exc.dRestRequestError as e:
-            msg = "%s (resource: %s, id: %s)" % (e.msg, self.name,
-                                                 resource_id)
+            msg = "%s (resource: %s)" % (e.msg, self.name)
             raise drest.exc.dRestRequestError(msg, e.response)
 
         return response
@@ -156,8 +155,7 @@ class SignuptoResourceHandler(drest.resource.RESTResourceHandler):
         try:
             response = self.api.make_request('PUT', path, params)
         except drest.exc.dRestRequestError as e:
-            msg = "%s (resource: %s, id: %s)" % (e.msg, self.name,
-                                                 resource_id)
+            msg = "%s (resource: %s)" % (e.msg, self.name)
             raise drest.exc.dRestRequestError(msg, e.response)
 
         return response
