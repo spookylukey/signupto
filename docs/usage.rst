@@ -2,8 +2,8 @@
 Usage
 ========
 
-To use ``signupto`` in a project::
-
+Quickstart
+==========
 
    >>> from signupto import Client, HashAuthorization
    >>> c = Client(auth=HashAuthorization(company_id=1234, user_id=4567,
@@ -28,19 +28,49 @@ To use ``signupto`` in a project::
      u'subscriber_id': 9186895}]
 
 
-You can also do token authorisation:
+Authorization
+=============
 
-.. code-block:: python
+Hash authorization::
 
-   from signupto import Client, TokenAuthorization
-   c = Client(auth=TokenAuthorization(username='joe', password='my_secret'))
+   >>> from signupto import Client, HashAuthorization
+   >>> c = Client(auth=HashAuthorization(company_id=1234, user_id=4567,
+   ...                                   api_key='e4cf7fe3b764a18c04f6792c09e3325d'))
 
 
-Client instances have attributes representing all the resources. The spelling of
-the attribute is the same as the path for the endpoint e.g. ``subscription``,
-``clickAutomation``.
 
-Each endpoint then has methods for the HTTP verbs: get(), post(), put(), delete() and head().
+Token authorization::
+
+   >>> from signupto import Client, TokenAuthorization
+   >>> c = Client(auth=TokenAuthorization(username='joe', password='my_secret'))
+
+This will do an unauthenticated API call to get the token, which will be used in
+subsequent API calls. If you want to get the actual token returned, along with
+the expiry timestamp, for storage and re-use, they can be found as attributes on
+the ``TokenAuthorization`` instance, after it has been passed to the ``Client``
+constructor::
+
+   >>> token_auth = TokenAuthorization(username='joe', password='my_secret')
+   >>> c = Client(auth=token_auth)
+   >>> token, expiry = token_auth.token, token_auth.expiry
+
+And then to re-use later::
+
+   >>> token_auth_2 = TokenAuthorization()
+   >>> token_auth_2.token = token
+   >>> token_auth_2.initialized = True
+   >>> c = Client(auth=token_auth_2)
+
+
+API calls
+=========
+
+Client instances have attributes representing all the resources/endpoints. The
+spelling of the attribute is the same as the path for the endpoint
+e.g. ``subscription``, ``clickAutomation``.
+
+Each endpoint then has methods for the HTTP verbs: get(), post(), put(),
+delete() and head().
 
 Parameters to the endpoint are passed as keyword arguments to these methods.
 
@@ -73,6 +103,9 @@ Example::
                            u'id': 19486109}, next=None, count=1)
 
 
+Errors
+======
+
 Errors returned in JSON documents by the server will raise
 ``signupto.ClientError``. For example::
 
@@ -96,6 +129,8 @@ useful when you are applying filters with the result is that there are no
 matching objects, which is often not an error condition for your application, so
 needs to be handled differently::
 
+
+    from signupto import ObjectNotFound
 
     try:
         unconfirmed = c.subscription.get(list_id=1234, confirmed=False).data
