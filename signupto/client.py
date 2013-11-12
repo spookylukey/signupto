@@ -178,10 +178,6 @@ class SignuptoRequestHandler(drest.request.RequestHandler):
         super(SignuptoRequestHandler, self).__init__(**kwargs)
 
     def make_request(self, method, url, params=None, headers=None):
-        if params is None:
-            params = {}
-        if headers is None:
-            headers = {}
         base_handler = super(SignuptoRequestHandler, self)
         return self.signupto_auth.make_authorized_request(base_handler, method, url, params=params, headers=headers)
 
@@ -196,10 +192,6 @@ class SignuptoAPI(drest.API):
 
 class NoAuthorization(object):
     def make_authorized_request(self, handler, method, url, params=None, headers=None):
-        if params is None:
-            params = {}
-        if headers is None:
-            headers = {}
         return handler.make_request(method, url, params=params, headers=headers)
 
 
@@ -235,8 +227,6 @@ class HashAuthorization(object):
         return ''.join(random.choice(string.ascii_lowercase + string.digits) for x in range(40))
 
     def make_authorized_request(self, handler, method, url, params=None, headers=None):
-        if params is None:
-            params = {}
         if headers is None:
             headers = {}
         nonce = self.make_nonce()
@@ -268,8 +258,6 @@ class TokenAuthorization(object):
         self.initialized = True
 
     def make_authorized_request(self, handler, method, url, params=None, headers=None):
-        if params is None:
-            params = {}
         if headers is None:
             headers = {}
         headers['Authorization'] = "SuTToken %s" % self.token
