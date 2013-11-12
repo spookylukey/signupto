@@ -79,7 +79,7 @@ class SignuptoSerializationHandler(drest.serialization.JsonSerializationHandler)
     data dictionary for convenience.
     """
     def deserialize(self, serialized_data):
-        if serialized_data == "":
+        if len(serialized_data) == 0:
             # For HEAD responses
             return serialized_data
         d = super(SignuptoSerializationHandler, self).deserialize(serialized_data)
