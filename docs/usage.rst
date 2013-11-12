@@ -2,8 +2,11 @@
 Usage
 ========
 
-Quickstart
-==========
+These docs assume familiarity with the `API docs for sign-up.to
+<https://dev.sign-up.to/documentation/reference/latest/>`_, which provide most
+of the details for endpoints, parameters etc.
+
+Quickstart::
 
    >>> from signupto import Client, HashAuthorization
    >>> c = Client(auth=HashAuthorization(company_id=1234, user_id=4567,
@@ -97,6 +100,7 @@ for more information.
 Example::
 
     >>> c.subscription.post(list_id=1234, subscriber_id=4567)
+
     SignuptoResponse(data={u'confirmed': False, u'mdate': 1384265219,
                            u'confirmationredirect': u'', u'subscriber_id': 4567,
                            u'source': u'api', u'cdate': 1384265219, u'list_id': 1234,
