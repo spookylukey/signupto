@@ -31,7 +31,7 @@ setup(
     package_dir={'signupto': 'signupto'},
     include_package_data=True,
     install_requires=[
-        "requests",
+        "requests >= 2.0",
         "six >= 1.4",
     ],
     license="BSD",
