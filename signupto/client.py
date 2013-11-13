@@ -238,7 +238,10 @@ class Client(object):
             else:
                 return None
 
-        d = json.loads(response.content)
+        content = response.content
+        if type(content) == bytes: # Python 3 fix
+            content = content.decode('utf-8')
+        d = json.loads(content)
         assert "status" in d, "Server response (%s) did not contain 'status' key, aborting" % serialized_data
 
         status = d["status"].lower()
