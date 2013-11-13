@@ -300,14 +300,16 @@ class Endpoint(object):
             else:
                 start = response.next
 
+    def __repr__(self):
+        return "Endpoint(%r)" % self.resource_name
 
 
 for resource_name in API_RESOURCES:
-    # Add the attributes to Client, with an unwrapper that removes the
-    # 'ResponseHandler' object and simplifies the API
+    # Add the endpoints to Client as properties
 
     def a_property(self, resource_name=resource_name):
         return Endpoint(self, resource_name)
     a_property.__name__ = resource_name
 
-    setattr(Client, resource_name, property(a_property))
+    setattr(Client, resource_name, property(a_property,
+                                            doc="Access /%s endpoint" % resource_name))
