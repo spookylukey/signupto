@@ -191,27 +191,27 @@ class Client(object):
     def __init__(self, version="0", auth=None):
         if hasattr(auth, 'initialize') and not getattr(auth, 'initialized', False):
             auth.initialize(version=version)
-        self.baseurl = 'https://api.sign-up.to/v%s/' % version
+        self._baseurl = 'https://api.sign-up.to/v%s/' % version
         if auth is None:
             auth = NoAuthorization()
-        self.auth = auth
+        self._auth = auth
 
     def make_request_raw(self, method, url, data='', params=None, headers=None):
         return requests.request(method, url, data=data, params=params, headers=headers)
 
     def make_request(self, method, resource_name, data=None, params=None, headers=None):
-        url = self.baseurl + resource_name
+        url = self._baseurl + resource_name
         if headers is None:
             headers = {}
         h2 = {}
         h2.update(self.extra_headers)
         h2.update(headers)
-        response = self.auth.make_authorized_request(self.make_request_raw,
-                                                     method,
-                                                     url,
-                                                     data=json.dumps(data),
-                                                     params=params,
-                                                     headers=h2)
+        response = self._auth.make_authorized_request(self.make_request_raw,
+                                                      method,
+                                                      url,
+                                                      data=json.dumps(data),
+                                                      params=params,
+                                                      headers=h2)
         return self.handle_response(response)
 
     def handle_response(self, response):
