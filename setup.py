@@ -19,7 +19,7 @@ history = open('HISTORY.rst').read().replace('.. :changelog:', '')
 
 setup(
     name='signupto',
-    version='0.0.3',
+    version='0.0.4',
     description='sign-up.to API client',
     long_description=readme + '\n\n' + history,
     author='Luke Plant',
