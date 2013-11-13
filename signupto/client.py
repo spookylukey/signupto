@@ -20,7 +20,7 @@ import requests
 
 # By explicitly listing endpoints, we can get tab completion and help etc. when
 # using Client interactively or in an IDE.
-API_RESOURCES = [
+ENDPOINTS = [
     'token',
 
     'automation',
@@ -287,7 +287,7 @@ class Endpoint(object):
         return "Endpoint(%r)" % self.resource_name
 
 
-for resource_name in API_RESOURCES:
+for resource_name in ENDPOINTS:
     # Add the endpoints to Client as properties
 
     def a_property(self, resource_name=resource_name):
