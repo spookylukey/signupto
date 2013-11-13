@@ -164,24 +164,7 @@ class Client(object):
     take the documented sign-up.to parameters as keyword arguments. e.g.:
 
     >>> c = Client(auth=HashAuthorization(...))
-    >>> c.list.get(id="mylist")
-
-    These methods return a SignuptoResponse object, which contains the
-    'response' attribute of the API call, that is, an object with these
-    attributes:
-
-    - data - the data returned by the API call, converted to native Python objects
-             e.g. a Python dictionary containing list information, or an array.
-
-    - next - value representing the resource following the last returned resource.
-
-    - count - the number of resources returned.
-
-    https://dev.sign-up.to/documentation/reference/latest/making-requests/response-format/
-
-    Any error (e.g. when the status is not "OK") will cause an exception to be
-    raised.
-
+    >>> c.list.get(id="mylist").data
     """
     extra_headers = {'Accept': 'application/json',
                      'Content-Type': 'application/json',
