@@ -54,7 +54,7 @@ API_RESOURCES = [
     'user',
 ]
 
-SignuptoResponse = namedtuple('SignuptoReponse', 'data next count')
+SignuptoResponse = namedtuple('SignuptoResponse', 'data next count')
 
 
 class ServerHttpError(ValueError):
