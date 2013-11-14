@@ -264,11 +264,15 @@ class Endpoint(object):
         return self.client.make_request('HEAD', self.resource_name,
                                         params=kwargs)
 
+    # Convenience method
+
     def get_all(self, **kwargs):
         """
         For requests that return lists in the 'data' attribute, and apply
         paging, this method will repeatedly follow the 'next' attribute to build
         up a full list, which is returned.
+
+        404's are converted to empty lists.
         """
         retval = []
         start = None
@@ -276,12 +280,32 @@ class Endpoint(object):
         while True:
             if start is not None:
                 kwargs['start'] = start
-            response = self.get(**kwargs)
+            try:
+                response = self.get(**kwargs)
+            except ObjectNotFound:
+                # No more
+                return retval
             retval.extend(response.data)
             if response.next is None:
                 return retval
             else:
                 start = response.next
+
+    def get_list(self, **kwargs):
+        """
+        Like 'get', but returns just the list of items in data (assuming it is a
+        list), and returns an empty list if a 404 is raised.
+        """
+        try:
+            return self.get(**kwargs).data
+        except ObjectNotFound:
+            return []
+
+    def delete_any(self, **kwargs):
+        try:
+            return self.delete(**kwargs).data
+        except ObjectNotFound:
+            return []
 
     def __repr__(self):
         return "Endpoint(%r)" % self.resource_name

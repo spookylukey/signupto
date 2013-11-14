@@ -2,6 +2,8 @@
 Usage
 ========
 
+.. module:: signupto.client
+
 These docs assume familiarity with the `API docs for sign-up.to
 <https://dev.sign-up.to/documentation/reference/latest/>`_, which provide most
 of the details for endpoints, parameters etc.
@@ -68,54 +70,67 @@ And then to re-use later::
 API calls
 =========
 
-Client instances have attributes representing all the resources/endpoints. The
+:class:`Client` instances have attributes representing all the resources/endpoints. The
 spelling of the attribute is the same as the path for the endpoint
 e.g. ``subscription``, ``clickAutomation``.
 
-Each endpoint then has methods for the HTTP verbs: get(), post(), put(),
-delete() and head().
+.. class:: Endpoint
 
-Parameters to the endpoint are passed as keyword arguments to these methods.
+    .. method:: get(**kwargs)
 
-Endpoints and their parameters are described in the sign-up.to docs here:
-https://dev.sign-up.to/documentation/reference/latest/endpoints/
+    .. method:: post(**kwargs)
 
-These methods return a ``SignuptoResponse`` object, which contains the
-'response' attribute of the API call, that is, an object with these attributes:
+    .. method:: put(**kwargs)
 
-* ``data`` - the data returned by the API call, converted to native Python
-  objects e.g. a Python dictionary containing list information, or an array.
-  The ``signupto`` library does not convert the data beyond converting into
-  native Python types.
+    .. method:: delete(**kwargs)
 
-* ``next`` - value representing the resource following the last returned resource.
+    Each endpoint then has methods for the HTTP verbs: get(), post(), put(),
+    delete() and head().
 
-* ``count`` - the number of resources returned.
+    Parameters to the endpoint are passed as keyword arguments to these methods.
 
-Usually you will just need the ``data`` attribute. See
-https://dev.sign-up.to/documentation/reference/latest/making-requests/response-format/
-for more information.
+    Endpoints and their parameters are described in the sign-up.to docs here:
+    https://dev.sign-up.to/documentation/reference/latest/endpoints/
+
+    These methods return a ``SignuptoResponse`` object, which contains the
+    'response' attribute of the API call, that is, an object with these attributes:
+
+    * ``data`` - the data returned by the API call, converted to native Python
+      objects e.g. a Python dictionary containing list information, or an array.
+      The ``signupto`` library does not convert the data beyond converting into
+      native Python types.
+
+    * ``next`` - value representing the resource following the last returned resource.
+
+    * ``count`` - the number of resources returned.
+
+    Usually you will just need the ``data`` attribute. See
+    https://dev.sign-up.to/documentation/reference/latest/making-requests/response-format/
+    for more information.
 
 
-Example::
+    Example::
 
-    >>> c.subscription.post(list_id=1234, subscriber_id=4567)
+        >>> c.subscription.post(list_id=1234, subscriber_id=4567)
 
-    SignuptoResponse(data={u'confirmed': False, u'mdate': 1384265219,
-                           u'confirmationredirect': u'', u'subscriber_id': 4567,
-                           u'source': u'api', u'cdate': 1384265219, u'list_id': 1234,
-                           u'id': 19486109}, next=None, count=1)
+        SignuptoResponse(data={u'confirmed': False, u'mdate': 1384265219,
+                               u'confirmationredirect': u'', u'subscriber_id': 4567,
+                               u'source': u'api', u'cdate': 1384265219, u'list_id': 1234,
+                               u'id': 19486109}, next=None, count=1)
 
 
-As there is no response dictionary for ``HEAD`` verbs, the ``head()`` method
-does not return a ``SignuptoResponse``, but instead returns None. It will raise
-an error like the other calls for HTTP codes in 4XX range.
+    .. method:: head(**kwargs)
+
+    The ``head()`` method works similarly to the other methods. However as there is
+    no response dictionary for ``HEAD`` verbs, the ``head()`` method does not return
+    a ``SignuptoResponse``, but instead returns None. It will raise an error like
+    the other calls for HTTP codes in 4XX range.
 
 Errors
 ======
 
-Errors returned in JSON documents by the server will raise
-``signupto.ClientError``. For example::
+Errors returned by the server in the 4XX range will raise
+:class:`ClientError`. For example::
 
 
     >>> c = Client(auth=HashAuthorization(company_id=1234, user_id=4567,
@@ -132,10 +147,10 @@ Errors returned in JSON documents by the server will raise
 The dictionary is stored on the exception object in the attribute ``error_info``.
 
 When the error has code 404, indicating something not found, a subclass of
-``ClientError``, ``ObjectNotFound``, is used instead. This can be especially
-useful when you are applying filters such that there are no matching objects,
-which is often not an error condition for your application, so needs to be
-handled differently::
+:class:`ClientError`, :class:`ObjectNotFound`, is used instead. This can be
+especially useful when you are applying filters such that there are no matching
+objects, which is often not an error condition for your application, so needs to
+be handled differently::
 
 
     from signupto import ObjectNotFound
@@ -145,4 +160,34 @@ handled differently::
     except ObjectNotFound:
         unconfirmed = []
 
+Alternatively you can use the convenience methods below:
 
+
+Convenience methods
+===================
+
+.. class:: Endpoint
+
+    .. method:: get_list(**kwargs)
+
+    This is similar to the :meth:`~Endpoint.get` method, except that it will catch 404 errors,
+    and convert them to an empty list. As a consequence, it never returns a full
+    :class:`SignuptoResponse` object, but just the data
+    (i.e. ``SignuptoResponse.data`` or an empty list).
+
+    .. method:: get_all(**kwargs)
+
+    This is similar to :meth:`~Endpoint.get_list`, but it will repeatedly follow the ``next``
+    parameter in order to get the full list of items.
+
+    .. method:: delete_any(**kwargs)
+
+    This is similar to :meth:`~Endpoint.delete`, but will catch 404 error, so that
+    you do not get an error if you delete something that doesn't exist. As a
+    consequence, the return value is just the ``data`` attribute.
+
+
+        >>> c.list.delete_any(id=1234)
+        [{u'id': 1234}]
+        >>> c.list.delete_any(id=1234)
+        []
