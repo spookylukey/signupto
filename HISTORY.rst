@@ -3,6 +3,11 @@
 History
 -------
 
+0.0.6 (2013-11-14)
+++++++++++++++++++
+
+* Added convenience methods ``get_list``, ``get_all`` and ``delete_any``.
+
 0.0.5 (2013-11-13)
 ++++++++++++++++++
 
