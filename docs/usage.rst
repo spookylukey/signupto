@@ -129,8 +129,11 @@ e.g. ``subscription``, ``clickAutomation``.
 Errors
 ======
 
+Errors returned by the server in the 5XX range will raise
+:class:`signupto.ServerError`.
+
 Errors returned by the server in the 4XX range will raise
-:class:`ClientError`. For example::
+:class:`signupto.ClientError`. For example::
 
 
     >>> c = Client(auth=HashAuthorization(company_id=1234, user_id=4567,

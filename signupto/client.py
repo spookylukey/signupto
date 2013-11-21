@@ -57,12 +57,12 @@ ENDPOINTS = [
 SignuptoResponse = namedtuple('SignuptoResponse', 'data next count')
 
 
-class ServerHttpError(ValueError):
+class ServerError(ValueError):
     """
     Indicates HTTP error code.
     """
     def __init__(self, message, status_code):
-        super(ServerHttpError, self).__init__(message)
+        super(ServerError, self).__init__(message)
         self.status_code = status_code
 
 
@@ -200,7 +200,7 @@ class Client(object):
     def handle_response(self, response):
         code = response.status_code
         if 500 <= code:
-            raise ServerHttpError(response.content, code)
+            raise ServerError(response.content, code)
         else:
             assert code < 300 or code >= 400 # Redirections should have been handled
             return self.deserialize(response)
