@@ -2,6 +2,9 @@
 signupto
 ===============================
 
+NOTICE: This project is unmaintained. If you want to take over maintenance, please get in contact with me.
+
+
 Minimalist client library for the sign-up.to HTTP API - http://sign-up.to
 
 * Free software: BSD license
